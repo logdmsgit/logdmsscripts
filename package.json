@@ -1,6 +1,6 @@
 {
-  "name": "logdmsauth",
-  "version": "1.0.1",
+  "name": "logdms",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,8 +11,10 @@
   "dependencies": {
     "axios": "^0.22.0",
     "command-line-args": "^5.2.0",
+    "commander": "^8.3.0",
     "keytar": "^7.7.0",
     "md5": "^2.3.0",
-    "prompts": "^2.4.1"
+    "prompts": "^2.4.1",
+    "yargs": "^17.2.1"
   }
 }

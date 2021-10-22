@@ -1,11 +1,15 @@
 const { auth } = require("./auth")
+const { program } = require("commander")
+
+program
+    .option('-c, --company <company>', 'Specify the company.')
+    .option('-r, --reset ', 'Reset the app.')
 
 
-let main = async () => {
-    try {
-        console.log(await auth());
-    } catch (error) {
-    }
-}
+program
+    .command("login")
+    .action((e) => {
+        auth(program.opts());
+    })
 
-main();
+program.parse(process.argv)

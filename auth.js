@@ -33,15 +33,16 @@ const decrypt = (hash, storePassword) => {
 };
 
 const optionsDefinitions = [
+    { name: "login", defaultOption: true },
     { name: 'company', alias: 'c', type: String },
     { name: 'reset', alias: 'r', type: Boolean }
 ]
 
 let companyName = null;
 
-module.exports.auth = async (hard_reset) => {
+module.exports.auth = async (options, hard_reset) => {
     let passHardReset = false;
-    const options = commandLineArgs(optionsDefinitions)
+
     let currentAccountString = null;
     let currentStorePassword = null;
     if (hard_reset == true) {
@@ -128,64 +129,66 @@ module.exports.auth = async (hard_reset) => {
                     message: 'Access Token Store Password:',
                     validate: (value) => {
                         if (value.length < 4)
-                            return "Please choose a Access Token Password with at least 4 characters."
+                            return "Please choose an Access Token Password with at least 4 characters."
                         else
                             return true;
                     }
                 }]);
-        let accountString = `${companyName}\\${response.username}:${response.password}`;
-        let buffer = new Buffer.alloc(accountString.length, accountString);
-        let base64AccountString = buffer.toString('base64');
+        if (response.storePassword) {
+            let accountString = `${companyName}\\${response.username}:${response.password}`;
+            let buffer = new Buffer.alloc(accountString.length, accountString);
+            let base64AccountString = buffer.toString('base64');
 
-        await keytar.setPassword("eloqua", "eloquaAccountString" + companyName, JSON.stringify(encrypt(base64AccountString, md5(response.storePassword)), response.username));
-        await keytar.setPassword("eloqua", "eloquaStorePassword" + companyName, md5(response.storePassword));
+            await keytar.setPassword("eloqua", "eloquaAccountString" + companyName, JSON.stringify(encrypt(base64AccountString, md5(response.storePassword)), response.username));
+            await keytar.setPassword("eloqua", "eloquaStorePassword" + companyName, md5(response.storePassword));
 
-        return await axios({
-            method: 'get',
-            url: 'https://secure.p01.eloqua.com/api/REST/1.0/assets/landingPage/1',
-            headers: {
-                'authorization': `Basic ${base64AccountString}`,
-            }
-        }).then(res => {
-            console.log("The access token has been securely saved.");
-            return {
-                key: base64AccountString,
-                success: true
-            }
-        }).catch(async e => {
-            const response = await prompts([
-                {
-                    type: 'confirm',
-                    name: 'tryAgain',
-                    message: 'The Access Token is invalid. Do you want to try again?',
-                    validate: (value) => {
-                        return true;
-                    }
-                }]);
-            if (response.tryAgain == true) {
-                return this.auth(true);
-            }
-            else {
-                let response2 = await prompts([
+            return await axios({
+                method: 'get',
+                url: 'https://secure.p01.eloqua.com/api/REST/1.0/assets/landingPage/1',
+                headers: {
+                    'authorization': `Basic ${base64AccountString}`,
+                }
+            }).then(res => {
+                console.log("The access token has been securely saved.");
+                return {
+                    key: base64AccountString,
+                    success: true
+                }
+            }).catch(async e => {
+                const response = await prompts([
                     {
                         type: 'confirm',
                         name: 'tryAgain',
-                        message: 'Do you want to sign in with other credentials?',
+                        message: 'The Access Token is invalid. Do you want to try again?',
                         validate: (value) => {
                             return true;
                         }
                     }]);
-                if (response2.tryAgain == true) {
-                    return this.auth(true);
-                }
-                else {
-                    process.exit();
-                }
-            }
+                if (response)
+                    if (response.tryAgain == true) {
+                        return this.auth(options, true);
+                    }
+                    else {
+                        let response2 = await prompts([
+                            {
+                                type: 'confirm',
+                                name: 'tryAgain',
+                                message: 'Do you want to sign in with other credentials?',
+                                validate: (value) => {
+                                    return true;
+                                }
+                            }]);
+                        if (response2.tryAgain == true) {
+                            return this.auth(options, true);
+                        }
+                        else {
+                            process.exit();
+                        }
+                    }
 
-        })
+            })
+        }
     }
-
     else {
         let currentAccountString = await keytar.getPassword("eloqua", "eloquaAccountString" + companyName);
         let currentStorePassword = await keytar.getPassword("eloqua", "eloquaStorePassword" + companyName);
@@ -199,28 +202,63 @@ module.exports.auth = async (hard_reset) => {
                     return true;
                 }
             }]);
-        if (md5(response.storePassword) == currentStorePassword) {
-            let decryptedAccountString = decrypt(JSON.parse(currentAccountString), md5(response.storePassword))
-            return await axios({
-                method: 'get',
-                url: 'https://secure.p01.eloqua.com/api/REST/1.0/assets/landingPage/1',
-                headers: {
-                    'authorization': `Basic ${decryptedAccountString}`,
-                }
-            }).then(res => {
-                return { key: decryptedAccountString }
-            }).catch(async e => {
+        if (response.storePassword)
+            if (md5(response.storePassword) == currentStorePassword) {
+                let decryptedAccountString = decrypt(JSON.parse(currentAccountString), md5(response.storePassword))
+                return await axios({
+                    method: 'get',
+                    url: 'https://secure.p01.eloqua.com/api/REST/1.0/assets/landingPage/1',
+                    headers: {
+                        'authorization': `Basic ${decryptedAccountString}`,
+                    }
+                }).then(res => {
+                    console.log("The Access Token store password is correct.");
+                    return { key: decryptedAccountString, success: true }
+                }).catch(async e => {
+                    const response = await prompts([
+                        {
+                            type: 'confirm',
+                            name: 'tryAgain',
+                            message: 'The Access Token is invalid. Do you want to try again?',
+                            validate: (value) => {
+                                return true;
+                            }
+                        }]);
+                    if (response.tryAgain == true) {
+                        return this.auth(options, true);
+                    }
+                    else {
+                        let response2 = await prompts([
+                            {
+                                type: 'confirm',
+                                name: 'tryAgain',
+                                message: 'Do you want to sign in with other credentials?',
+                                validate: (value) => {
+                                    return true;
+                                }
+                            }]);
+                        if (response2.tryAgain == true) {
+                            return this.auth(options, true);
+                        }
+                        else {
+                            process.exit();
+                        }
+                    }
+
+                })
+            }
+            else {
                 const response = await prompts([
                     {
                         type: 'confirm',
                         name: 'tryAgain',
-                        message: 'The Access Token is invalid. Do you want to try again?',
+                        message: 'The password for the Access Token Store Password is incorrect. Do you want to try again?',
                         validate: (value) => {
                             return true;
                         }
                     }]);
                 if (response.tryAgain == true) {
-                    return this.auth(true);
+                    return this.auth(options);
                 }
                 else {
                     let response2 = await prompts([
@@ -233,46 +271,13 @@ module.exports.auth = async (hard_reset) => {
                             }
                         }]);
                     if (response2.tryAgain == true) {
-                        return this.auth(true);
+                        return this.auth(options, true);
                     }
                     else {
                         process.exit();
                     }
                 }
-
-            })
-        }
-        else {
-            const response = await prompts([
-                {
-                    type: 'confirm',
-                    name: 'tryAgain',
-                    message: 'The password is Access Token Store Password is incorrect. Do you want to try again?',
-                    validate: (value) => {
-                        return true;
-                    }
-                }]);
-            if (response.tryAgain == true) {
-                return this.auth();
             }
-            else {
-                let response2 = await prompts([
-                    {
-                        type: 'confirm',
-                        name: 'tryAgain',
-                        message: 'Do you want to sign in with other credentials?',
-                        validate: (value) => {
-                            return true;
-                        }
-                    }]);
-                if (response2.tryAgain == true) {
-                    return this.auth(true);
-                }
-                else {
-                    process.exit();
-                }
-            }
-        }
     }
 
 }
