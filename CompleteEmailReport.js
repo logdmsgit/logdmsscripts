@@ -104,7 +104,7 @@ let main = async (options) => {
                         totalData[key]["updatedBy"] = "N/A"
                 })
 
-                let csvdata = "UserID\tUserName\tType\tcurrentStatus\tId\tcreatedAt\tDepth\tName\tupdatedAt\tUpdatedBy\tbounceBackEmail\temailFooterId\temailHeaderId\treplyToEmail\treplyToEmail\treplyToName\tsenderEmail\tsenderName\tsubject\tvirtualMTAId\n"
+                let csvdata = "UserID\tUserName\tType\tcurrentStatus\tId\tcreatedAt\tDepth\tName\tupdatedAt\tUpdatedBy\tbounceBackEmail\temailFooterId\temailGroupId\temailHeaderId\treplyToEmail\treplyToName\tsenderEmail\tsenderName\tsubject\tvirtualMTAId\n"
 
 
                 totalData.forEach(item => {
