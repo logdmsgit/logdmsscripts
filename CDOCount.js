@@ -16,7 +16,25 @@ let main = async (options) => {
     if (res)
         if (res.success == true) {
             let pathRes;
+            let podRes;
             try {
+                podRes = await prompts([{
+                    type: 'number',
+                    name: 'pod',
+                    message: 'POD Number: ',
+                    validate: (value) => {
+                        let isErr = false;
+                        fs.access(value, err => {
+                            if (err)
+                                isErr = true;
+                        })
+                        if (isErr)
+                            return false;
+                        else
+                            return true;
+                    }
+                },]);
+
                 pathRes = await prompts([{
                     type: 'text',
                     name: 'path',
@@ -36,7 +54,7 @@ let main = async (options) => {
             } catch (error) {
 
             }
-            let urls = returnAssetLinks("customobjects", 1);
+            let urls = returnAssetLinks("customobjects", podRes.pod);
             try {
                 let initialApiTotal = await axios({
                     method: "get",
@@ -94,7 +112,7 @@ let main = async (options) => {
                 })
 
                 fs.writeFileSync(pathRes.path, csvdata);
-                console.log("The files has been successfully saved to " + pathRes.path + ".")
+                console.log("The file has been successfully saved to " + pathRes.path + ".")
             } catch (error) {
                 console.log(error);
             }
