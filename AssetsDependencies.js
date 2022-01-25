@@ -122,7 +122,7 @@ let main = async (options) => {
                     else
                         payload[key][0].forEach((data, k) => {
                             if (k > 0)
-                                csvdata += '\t\t';
+                                csvdata += key + "\t" + payload[key][1] + '\t';
                             if (data["type"])
                                 csvdata += data["type"]
                             else
