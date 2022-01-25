@@ -21,18 +21,7 @@ let main = async (options) => {
                 podRes = await prompts([{
                     type: 'number',
                     name: 'pod',
-                    message: 'POD Number: ',
-                    validate: (value) => {
-                        let isErr = false;
-                        fs.access(value, err => {
-                            if (err)
-                                isErr = true;
-                        })
-                        if (isErr)
-                            return false;
-                        else
-                            return true;
-                    }
+                    message: 'POD Number: '
                 },]);
 
                 pathRes = await prompts([{
