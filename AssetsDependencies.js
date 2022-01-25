@@ -2,7 +2,7 @@ const axios = require("axios");
 const prompts = require("prompts")
 const { auth } = require("./auth");
 const { returnAssetLinks } = require("./utils/functions");
-const ExcelJS = require('exceljs');
+const cliProgress = require('cli-progress');
 const fs = require("fs");
 
 let waitForResults = (payload, failedPayload, totalElements) => {
@@ -16,6 +16,7 @@ let main = async (options) => {
     if (res)
         if (res.success == true) {
             let assetTypeRes
+            let podRes
             try {
                 assetTypeRes = await prompts([{
                     type: 'text',
@@ -36,6 +37,11 @@ let main = async (options) => {
 
             let pathRes;
             try {
+                podRes = await prompts([{
+                    type: 'number',
+                    name: 'pod',
+                    message: 'POD Number: '
+                },]);
                 pathRes = await prompts([{
                     type: 'text',
                     name: 'path',
@@ -55,7 +61,9 @@ let main = async (options) => {
             } catch (error) {
 
             }
-            let urls = returnAssetLinks(assetTypeRes.assetType, 1);
+            let urls = returnAssetLinks(assetTypeRes.assetType, podRes.pod);
+            let n = 0;
+            const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
             try {
                 let initialApiTotal = await axios({
                     method: "get",
@@ -66,9 +74,8 @@ let main = async (options) => {
                 })
 
                 let totalPages = initialApiTotal.data.total / initialApiTotal.data.pageSize;
-
                 let totalData = [];
-                for (let i = 0; i < totalPages; i++) {
+                for (let i = 0; i < Math.ceil(totalPages); i++) {
                     try {
                         let pageData = await axios({
                             method: "get",
@@ -81,6 +88,7 @@ let main = async (options) => {
                     } catch (error) {
                     }
                 }
+                bar.start(totalData.length, 0);
 
                 let payload = {};
                 let promises = [];
@@ -95,7 +103,8 @@ let main = async (options) => {
                                 }
                             })
                             payload[`${totalData[i].id}`] = [elementData.data, totalData[i].name]
-                            console.log(i, totalData.length);
+                            n++;
+                            bar.update(n);
                         } catch (error) {
                         }
                     })())
@@ -138,8 +147,11 @@ let main = async (options) => {
                         })
                 })
                 fs.writeFileSync(pathRes.path, csvdata);
-                console.log("The files has been successfully saved to " + pathRes.path + ".")
+                bar.update(totalData.length);
+                bar.stop();
+                console.log("The file has been successfully saved to " + pathRes.path + ".")
             } catch (error) {
+                bar.stop();
                 console.log(error);
             }
 

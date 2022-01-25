@@ -2,7 +2,7 @@ const axios = require("axios");
 const prompts = require("prompts")
 const { auth } = require("./auth");
 const { returnAssetLinks } = require("./utils/functions");
-const ExcelJS = require('exceljs');
+const cliProgress = require('cli-progress');
 const fs = require("fs");
 
 let waitForResults = (payload, failedPayload, totalElements) => {
@@ -56,6 +56,8 @@ let main = async (options) => {
                 let totalPages = initialApiTotal.data.total / initialApiTotal.data.pageSize;
                 let totalData = [];
                 let pagesPromises = [];
+                const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+                let n = 0;
 
                 for (let i = 0; i < totalPages; i++) {
                     pagesPromises.push((async () => {
@@ -76,16 +78,21 @@ let main = async (options) => {
 
                 let payload = {};
                 let promises = [];
+
+                bar.start(totalData.length, 0);
+
                 for (let i = 0; i < totalData.length; i++) {
                     promises.push((async () => {
                         try {
                             let elementData = await axios({
                                 method: "get",
-                                url: "https://secure.p01.eloqua.com/api/REST/2.0/data/customObject/" + totalData[i].id + '/instances',
+                                url: `https://secure.p0${podRes.pod}.eloqua.com/api/REST/2.0/data/customObject/` + totalData[i].id + '/instances',
                                 headers: {
                                     'authorization': 'Basic ' + res.key
                                 }
                             })
+                            n++;
+                            bar.update(n);
                             payload[`${totalData[i].id}`] = [elementData.data.total, totalData[i].name]
                         } catch (error) {
                         }
@@ -99,10 +106,12 @@ let main = async (options) => {
                 Object.keys(payload).forEach(key => {
                     csvdata += key + "\t" + payload[key][1] + '\t' + payload[key][0] + '\n';
                 })
-
+                bar.update(totalData.length);
+                bar.stop();
                 fs.writeFileSync(pathRes.path, csvdata);
                 console.log("The file has been successfully saved to " + pathRes.path + ".")
             } catch (error) {
+                bar.stop();
                 console.log(error);
             }
 

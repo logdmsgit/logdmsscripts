@@ -3,9 +3,9 @@ const prompts = require("prompts")
 const { auth } = require("./auth");
 const { returnAssetLinks } = require("./utils/functions");
 const fs = require("fs");
+const cliProgress = require('cli-progress');
 
 let waitForResults = (payload, failedPayload, totalElements) => {
-    console.log(Object.keys(payload).length)
     if (Object.keys(payload).length === totalElements.length) {
         waitForResults(pay)
     }
@@ -33,7 +33,13 @@ let main = async (options) => {
 
             }
             let pathRes;
+            let podRes;
             try {
+                podRes = await prompts([{
+                    type: 'number',
+                    name: 'pod',
+                    message: 'POD Number: '
+                },]);
                 pathRes = await prompts([{
                     type: 'text',
                     name: 'path',
@@ -53,7 +59,7 @@ let main = async (options) => {
             } catch (error) {
 
             }
-            let urls = returnAssetLinks(assetTypeRes.assetType, 1);
+            let urls = returnAssetLinks(assetTypeRes.assetType, podRes.pod);
             try {
                 let initialApiTotal = await axios({
                     method: "get",
@@ -69,7 +75,7 @@ let main = async (options) => {
                 try {
                     let userData = await axios({
                         method: "get",
-                        url: `https://secure.p01.eloqua.com/api/REST/2.0/system/users`,
+                        url: `https://secure.p0${podRes.pod}.eloqua.com/api/REST/2.0/system/users`,
                         headers: {
                             'authorization': 'Basic ' + res.key
                         }
@@ -83,7 +89,9 @@ let main = async (options) => {
 
                 let totalData = [];
                 let pagesPromises = [];
-
+                let n = 0;
+                const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+                bar.start(totalPages, 0);
                 for (let i = 0; i < totalPages; i++) {
                     pagesPromises.push((async () => {
                         try {
@@ -94,7 +102,8 @@ let main = async (options) => {
                                     'authorization': 'Basic ' + res.key
                                 }
                             })
-                            console.log(i, pageData.data.total);
+                            n++;
+                            bar.update(n);
                             totalData = [...totalData, ...pageData.data.elements];
                         } catch (error) {
                         }
@@ -175,10 +184,12 @@ let main = async (options) => {
 
                     csvdata += "\n"
                 })
-
+                bar.update(totalPages);
+                bar.stop();
                 fs.writeFileSync(pathRes.path, csvdata);
-                console.log("The files has been successfully saved to " + pathRes.path + ".")
+                console.log("The file has been successfully saved to " + pathRes.path + ".")
             } catch (error) {
+                bar.stop();
                 console.log(error);
             }
 

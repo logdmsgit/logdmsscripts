@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.24.0",
+    "cli-progress": "^3.10.0",
     "command-line-args": "^5.2.0",
     "commander": "^8.3.0",
     "csv": "^6.0.4",
