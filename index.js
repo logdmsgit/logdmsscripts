@@ -43,4 +43,9 @@ program
     .action((e) => {
         cdoCount(program.opts())
     })
+program
+    .command("version")
+    .action(() => {
+        console.log("v1.0.10");
+    })
 program.parse(process.argv)
