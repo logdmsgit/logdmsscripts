@@ -46,6 +46,6 @@ program
 program
     .command("version")
     .action(() => {
-        console.log("v1.0.10");
+        console.log("v1.0.11");
     })
 program.parse(process.argv)

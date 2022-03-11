@@ -31,7 +31,6 @@ let setNewPassword = async (prevData) => {
 
     return await axios(config)
         .then(function (response) {
-            console.log(response, base64AccountString);
             keytar.setPassword("eloqua", `eloquaBase64~~${prevData.companyName}~~${prevData.username}`, base64AccountString)
             return {
                 key: base64AccountString,
@@ -56,7 +55,6 @@ let setNewPassword = async (prevData) => {
 }
 
 module.exports.auth = async (options, hard_reset, prevData) => {
-    console.log(options);
     if (prevData) {
         return await setNewPassword(prevData)
     }
