@@ -111,7 +111,6 @@ let main = async (options) => {
                 fs.writeFileSync(pathRes.path, csvdata);
                 console.log("The file has been successfully saved to " + pathRes.path + ".")
             } catch (error) {
-                bar.stop();
                 console.log(error);
             }
 
