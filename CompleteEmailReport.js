@@ -54,7 +54,7 @@ let main = async (options) => {
                     }
                 })
 
-                let totalPages = Math.ceil(initialApiTotal.data.total);
+                let totalPages = Math.ceil(initialApiTotal.data.total / 5);
                 let userKeys = {};
 
                 try {
@@ -82,7 +82,7 @@ let main = async (options) => {
                         try {
                             let pageData = await axios({
                                 method: "get",
-                                url: urls.idLink + (i + 1).toString() + '&depth=complete&count=1',
+                                url: urls.idLink + (i + 1).toString() + '&depth=complete&count=5',
                                 headers: {
                                     'authorization': 'Basic ' + res.key
                                 }
